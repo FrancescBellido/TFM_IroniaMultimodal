@@ -26,12 +26,12 @@ def findIfnegationPresent(utterance):
 
 
 def findIfendingwithnt(utterance):
-	# CAMBIO: Añidamos las formulas "isn't", "aren't", "won't", "couldn't", "mustn't", "shan't", needn't, haven't y hasn't.
+	# CAMBIO: Añidamos las formulas "isn't", "aren't", "won't", "couldn't", "mustn't", "shan't", "needn't", "haven't", "hasn't", "wasn't" y "weren't".
 	d = {"didn't": "did", "don't": "do", "doesn't": "does", "can't": "can",
 		"cannot": "can", "wouldn't": "would", "shouldn't": "should",
 		"isn't": "is", "aren't": "are", "won't": "will", "couldn't": "could",
 		"mustn't": "must", "shan't": "shall", "needn't": "need",
-		"haven't": "have", "hasn't": "has"}
+		"haven't": "have", "hasn't": "has", "wasn't": "was", "weren't": "were"}
 	words = utterance.split()
 	for w in words:
 		if w in d:
@@ -227,6 +227,14 @@ def reverse_valence(utterance, antonyms=None, correction_tool=None):
 						break
 					utterance = utterance.replace(a,"doesn't "+a[:-1],1)
 					break
+				# CAMBIO: Se corrige la negación del verbo "to be" en pasado simple.
+				if b == 'VBD':
+					if a=='was':
+						utterance = utterance.replace(" was "," was not ",1)
+						break
+					if a=='were':
+						utterance = utterance.replace(" were "," were not ",1)
+						break					
 				# CAMBIO: Se niegan los verbos modales.
 				if b == "MD":
 					modal, present = modal_negation(a)
@@ -246,11 +254,34 @@ def reverse_valence(utterance, antonyms=None, correction_tool=None):
 					utterance = utterance.replace(a,a[3:],1)
 					break
 				# CAMBIO: Forzamos la búsqueda de antónimos.
-				if (a in antonyms) and (b in ["JJ", "NN", "VB"]):
+				if (a in antonyms) and (b in ["JJ", "JJS", "NN", "VB"]):
 					utterance = utterance.replace(a,antonyms[a],1)
 					break
-		# CAMBIO: Si no se han aplicado cambios todavía, negamos el gerundio de las frases nominales.
 		if utterance == prev_utterance:
+			# CAMBIO: Sustituimos preposiciones por términos opuestos.
+			# CAMBIO: Preposiciones a sustituir de prioridad alta.
+			for a,b in pos_text: 
+				if b == 'IN':
+					if a == 'with':
+						return utterance.replace(' with ',' without ').capitalize()
+					if a == 'without':
+						return utterance.replace(' without ',' with ').capitalize()
+					if a == 'above':
+						return utterance.replace(' above ', ' below ').capitalize()
+					if a == 'below':
+						return utterance.replace(' below ', ' above ').capitalize()
+			# CAMBIO: Preposiciones a sustituir de prioridad baja.
+			for a,b in pos_text:
+				if b == 'IN':					
+					if a == 'in':
+						return utterance.replace(' in ',' out ').capitalize()
+					if a == 'out':
+						return utterance.replace(' out ',' in ').capitalize()					
+					if a == 'on':
+						return utterance.replace(' on ',' off ').capitalize()
+					if a == 'off':
+						return utterance.replace(' off ',' on ').capitalize()
+			# CAMBIO: Si no se han aplicado cambios todavía, negamos el gerundio de las frases nominales.
 			for a,b in pos_text:
 				if b == "VBG":
 					singular = True
@@ -271,6 +302,7 @@ def reverse_valence(utterance, antonyms=None, correction_tool=None):
 		if utterance[-1] != '.':
 			utterance += '.'
 		return utterance.capitalize()
+
 
 # CAMBIO: Descomentamos la línea y la condicionamos a que se esté ejecutando el módulo como programa principal y a que se reciba el argumento.
 if __name__ == "__main__" and len(sys.argv) > 1:
